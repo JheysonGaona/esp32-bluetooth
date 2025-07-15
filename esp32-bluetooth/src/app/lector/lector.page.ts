@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { BluetoothDataService } from '../services/bluetooth-data.service';
 import { LectorDispositivo } from '../Interface/lector-dispositivo.model';
-
+import { Subscription } from 'rxjs'; 
 
 @Component({
   selector: 'app-lector',
@@ -9,7 +9,7 @@ import { LectorDispositivo } from '../Interface/lector-dispositivo.model';
   styleUrls: ['./lector.page.scss'],
   standalone: false,
 })
-export class LectorPage implements OnInit {
+export class LectorPage implements OnInit, OnDestroy {
 
   // Modo numero 1 para lector de datos
   /*
@@ -21,6 +21,7 @@ export class LectorPage implements OnInit {
 
   // Modo numero 2 para lector de datos
   datos: LectorDispositivo | null = null;
+  subscription: Subscription | null = null;
 
 
   constructor(
@@ -43,7 +44,15 @@ export class LectorPage implements OnInit {
 
   // Modo numero 2 para lector de datos
   ngOnInit() {
-    this.datos = this.bluetoothDataService.getLectura();
-    console.log('Datos del lector: ', this.datos);
+    this.subscription = this.bluetoothDataService.getLectura().subscribe(data => {
+      if(data) {
+        this.datos = data;
+        console.log('Actualizado en lector:', this.datos);
+      }
+    })
+  }
+
+  ngOnDestroy() {
+    this.subscription?.unsubscribe();
   }
 }

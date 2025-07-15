@@ -50,7 +50,10 @@ export class HomePage implements OnInit {
 
     try {
       this.pairedDevices = await this.bluetoothSerial.list();
-      this.unpairedDevices = await this.bluetoothSerial.discoverUnpaired();
+
+      // Se modifico
+      const rawUnpaired = await this.bluetoothSerial.discoverUnpaired();
+      this.unpairedDevices = this.removeDuplicates(rawUnpaired);
 
       console.log('Emparejados:', this.pairedDevices);
       console.log('No emparejados:', this.unpairedDevices);
@@ -127,6 +130,17 @@ export class HomePage implements OnInit {
       color
     });
     toast.present();
+  }
+
+  removeDuplicates(devices: any[]): any[] {
+    const seen = new Set();
+    return devices.filter(device => {
+      if (seen.has(device.address)) {
+        return false;
+      }
+      seen.add(device.address);
+      return true;
+    });
   }
 
   // Se agrego este nuevo metodo

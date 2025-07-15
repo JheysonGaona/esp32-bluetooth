@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { LectorDispositivo } from '../Interface/lector-dispositivo.model';
+import { BehaviorSubject, Observable } from 'rxjs';
+
 
 @Injectable({
   providedIn: 'root'
@@ -22,15 +24,15 @@ export class BluetoothDataService {
   */
 
   // Modo numero 2 para leer datos
-  public lectura: LectorDispositivo | null = null;
+  public lectura = new BehaviorSubject<LectorDispositivo | null> (null);
 
   constructor() { }
 
   setLectura(data: LectorDispositivo){
-    this.lectura = data;
+    this.lectura.next(data);
   }
 
-  getLectura(){
+  getLectura(): Observable<LectorDispositivo | null>{
     return this.lectura;
   }
 }
