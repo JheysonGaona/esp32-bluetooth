@@ -1,0 +1,7 @@
+{
+  "name": "esp32-bluetooth",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
