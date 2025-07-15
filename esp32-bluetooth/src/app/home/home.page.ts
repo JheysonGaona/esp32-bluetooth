@@ -2,6 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { BluetoothSerial } from '@awesome-cordova-plugins/bluetooth-serial/ngx';
 import { Platform, ToastController, LoadingController } from '@ionic/angular';
 
+// Nuevo contenido para transferir datos del BL
+import { BluetoothDataService } from '../services/bluetooth-data.service';
+import { Router } from '@angular/router';
+import { LectorDispositivo } from '../Interface/lector-dispositivo.model';
+
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
@@ -19,7 +24,10 @@ export class HomePage implements OnInit {
     private bluetoothSerial: BluetoothSerial,
     private platform: Platform,
     private toastController: ToastController,
-    private loadingController: LoadingController
+    private loadingController: LoadingController,
+    // Se agrego esta nueva seccion
+    private bluetoothDataService: BluetoothDataService,
+    private router: Router
   ) {}
 
   async ngOnInit() {
@@ -86,11 +94,28 @@ export class HomePage implements OnInit {
     );
   }
 
+  // Modo numero 1 para leer datos
+  /*
   readData() {
     this.bluetoothSerial.subscribe('\n').subscribe(data => {
       const trimmed = data.trim();
       this.receivedMessages.push(trimmed);
       console.log('Dato recibido:', trimmed);
+    });
+  }
+  */
+
+  // Modo numero 2 para leer datos
+  readData() {
+    this.bluetoothSerial.subscribe('\n').subscribe(data => {
+      try{
+        const parsed: LectorDispositivo = JSON.parse(data.trim());
+        console.log('Dato recibido:', parsed);
+        this.bluetoothDataService.setLectura(parsed);
+      }catch (error){
+        console.error('Los datos recibidos no son en formato JSON:', data);
+        this.showToast('Formato de dato inválido');
+      }
     });
   }
 
@@ -102,5 +127,12 @@ export class HomePage implements OnInit {
       color
     });
     toast.present();
+  }
+
+  // Se agrego este nuevo metodo
+  goToLector() {
+    // Modo numero 1 para lector de datos, tiens que activarlo
+    // this.bluetoothDataService.setMessages(this.receivedMessages);
+    this.router.navigate(['/lector']);
   }
 }

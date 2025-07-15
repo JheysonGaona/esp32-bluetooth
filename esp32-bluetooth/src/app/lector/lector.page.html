@@ -1,0 +1,33 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>lector</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">lector</ion-title>
+    </ion-toolbar>
+    <!-- Desde aqui comienzo a generar HTML -->
+    <div class="container">
+      <ion-card>
+        <ion-icon name="pulse-sharp"></ion-icon>
+        {{ datos?.ritmoCardiaco }}
+        <p>Ritmo Cardiaco</p> lpm
+      </ion-card>
+
+      <ion-card>
+        <ion-icon name="thermometer-sharp"></ion-icon>
+        {{ datos?.temperatura }}
+        <p>Temperatura</p> °C
+      </ion-card>
+
+      <ion-card>
+        <ion-icon name="heart-circle"></ion-icon>
+        {{ datos?.satOxi }}
+        <p>Saturacion de oxígeno</p> %
+      </ion-card>
+    </div>
+  </ion-header>
+</ion-content>

@@ -10,7 +10,11 @@ const routes: Routes = [
     path: '',
     redirectTo: 'home',
     pathMatch: 'full'
+  },  {
+    path: 'lector',
+    loadChildren: () => import('./lector/lector.module').then( m => m.LectorPageModule)
   },
+
 ];
 
 @NgModule({
