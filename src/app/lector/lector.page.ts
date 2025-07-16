@@ -11,6 +11,8 @@ import { Subscription } from 'rxjs';
 })
 export class LectorPage implements OnInit, OnDestroy {
 
+
+
   // Modo numero 1 para lector de datos
   /*
   ritmoCardiaco: string = '';
@@ -20,7 +22,11 @@ export class LectorPage implements OnInit, OnDestroy {
   */
 
   // Modo numero 2 para lector de datos
-  datos: LectorDispositivo | null = null;
+  datos: LectorDispositivo = {
+    ritmoCardiaco: '0',
+    temperatura: '0',
+    satOxi: '0'
+  };
   subscription: Subscription | null = null;
 
 
@@ -44,12 +50,10 @@ export class LectorPage implements OnInit, OnDestroy {
 
   // Modo numero 2 para lector de datos
   ngOnInit() {
-    this.subscription = this.bluetoothDataService.getLectura().subscribe(data => {
-      if(data) {
-        this.datos = data;
-        console.log('Actualizado en lector:', this.datos);
-      }
-    })
+    this.subscription = this.bluetoothDataService.datos$.subscribe(data => {
+      console.log('📡 Datos en lector:', data);
+      this.datos = data;
+    });
   }
 
   ngOnDestroy() {

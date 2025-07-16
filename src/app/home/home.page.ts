@@ -78,24 +78,23 @@ export class HomePage implements OnInit {
 
   async connect(address: string) {
     const loading = await this.loadingController.create({
-      message: `Conectando a ${address}...`,
-      spinner: 'lines',
+      message: 'Conectando...',
     });
     await loading.present();
 
     this.bluetoothSerial.connect(address).subscribe(
       () => {
         loading.dismiss();
-        this.showToast('Conectado con éxito', 'success');
-        this.readData();
+        this.bluetoothDataService.iniciarLecturaBluetooth();
+        this.router.navigate(['/lector']);
       },
       error => {
         loading.dismiss();
-        console.error('Error al conectar:', error);
-        this.showToast('Error al conectar al dispositivo', 'danger');
+        alert('Error al conectar Bluetooth.');
       }
     );
   }
+
 
   // Modo numero 1 para leer datos
   /*
@@ -114,7 +113,7 @@ export class HomePage implements OnInit {
       try{
         const parsed: LectorDispositivo = JSON.parse(data.trim());
         console.log('Dato recibido:', parsed);
-        this.bluetoothDataService.setLectura(parsed);
+        // this.bluetoothDataService.setLectura(parsed);
       }catch (error){
         console.error('Los datos recibidos no son en formato JSON:', data);
         this.showToast('Formato de dato inválido');
@@ -141,6 +140,26 @@ export class HomePage implements OnInit {
       seen.add(device.address);
       return true;
     });
+  }
+
+
+  parseBluetoothData(data: string): LectorDispositivo {
+    try {
+      // Si tu dispositivo envía datos en JSON
+      const json = JSON.parse(data);
+      return {
+        ritmoCardiaco: json.ritmoCardiaco.toString(),
+        temperatura: json.temperatura.toString(),
+        satOxi: json.satOxi.toString(),
+      };
+    } catch (e) {
+      console.error('Error al parsear datos:', data);
+      return {
+        ritmoCardiaco: '0',
+        temperatura: '0',
+        satOxi: '0',
+      };
+    }
   }
 
   // Se agrego este nuevo metodo
