@@ -5,7 +5,7 @@ import { Platform, ToastController, LoadingController } from '@ionic/angular';
 // Nuevo contenido para transferir datos del BL
 import { BluetoothDataService } from '../services/bluetooth-data.service';
 import { Router } from '@angular/router';
-import { LectorDispositivo } from '../Interface/lector-dispositivo.model';
+import { AnalisisSuenio } from '../Interface/analisis-suenio.model';
 
 @Component({
   selector: 'app-home',
@@ -112,7 +112,7 @@ export class HomePage implements OnInit {
   readData() {
     this.bluetoothSerial.subscribe('\n').subscribe(data => {
       try{
-        const parsed: LectorDispositivo = JSON.parse(data.trim());
+        const parsed: AnalisisSuenio = JSON.parse(data.trim());
         console.log('Dato recibido:', parsed);
         this.bluetoothDataService.setLectura(parsed);
       }catch (error){

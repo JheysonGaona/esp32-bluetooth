@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { LectorDispositivo } from '../Interface/lector-dispositivo.model';
+import { AnalisisSuenio } from '../Interface/analisis-suenio.model';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 
@@ -24,15 +24,15 @@ export class BluetoothDataService {
   */
 
   // Modo numero 2 para leer datos
-  public lectura = new BehaviorSubject<LectorDispositivo | null> (null);
+  public lectura = new BehaviorSubject<AnalisisSuenio | null> (null);
 
   constructor() { }
 
-  setLectura(data: LectorDispositivo){
+  setLectura(data: AnalisisSuenio){
     this.lectura.next(data);
   }
 
-  getLectura(): Observable<LectorDispositivo | null>{
+  getLectura(): Observable<AnalisisSuenio | null>{
     return this.lectura;
   }
 }

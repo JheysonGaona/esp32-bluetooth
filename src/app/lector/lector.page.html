@@ -12,20 +12,26 @@
   <div class="container">
     <ion-card>
       <ion-icon name="pulse-sharp"></ion-icon>
-      {{ datos?.ritmoCardiaco }}
-      <p>Ritmo Cardiaco</p> lpm
+      {{ datos?.horasSueno }}
+      <p>Horas de sueño</p> lpm
     </ion-card>
 
     <ion-card>
       <ion-icon name="thermometer-sharp"></ion-icon>
-      {{ datos?.temperatura }}
-      <p>Temperatura</p> °C
+      {{ datos?.suenoProfundo }}
+      <p>Sueño profundo</p> °C
     </ion-card>
 
     <ion-card>
       <ion-icon name="heart-circle"></ion-icon>
-      {{ datos?.satOxi }}
-      <p>Saturacion de oxígeno</p> %
+      {{ datos?.despertaresNocturnos }}
+      <p>Despertares nocturnos</p> %
+    </ion-card>
+
+    <ion-card>
+      <ion-icon name="heart-circle"></ion-icon>
+      {{ datos?.frecuenciaCardiacaPromedio }}
+      <p>Frecuencia cardiaca promedio</p> %
     </ion-card>
   </div>
 </ion-content>

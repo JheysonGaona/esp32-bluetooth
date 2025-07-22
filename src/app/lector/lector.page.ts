@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { BluetoothDataService } from '../services/bluetooth-data.service';
-import { LectorDispositivo } from '../Interface/lector-dispositivo.model';
+import { AnalisisSuenio } from '../Interface/analisis-suenio.model';
 import { Subscription } from 'rxjs'; 
 
 @Component({
@@ -20,7 +20,7 @@ export class LectorPage implements OnInit, OnDestroy {
   */
 
   // Modo numero 2 para lector de datos
-  datos: LectorDispositivo | null = null;
+  datos: AnalisisSuenio | null = null;
   subscription: Subscription | null = null;
 
 
