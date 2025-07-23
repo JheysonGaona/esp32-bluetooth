@@ -1,11 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { BluetoothSerial } from '@awesome-cordova-plugins/bluetooth-serial/ngx';
 import { Platform, ToastController, LoadingController } from '@ionic/angular';
-
-// Nuevo contenido para transferir datos del BL
-import { BluetoothDataService } from '../services/bluetooth-data.service';
 import { Router } from '@angular/router';
+import { BluetoothDataService } from '../services/bluetooth-data.service';
 import { AnalisisSuenio } from '../Interface/analisis-suenio.model';
+import { BleClient, ScanResult } from '@capacitor-community/bluetooth-le';
 
 @Component({
   selector: 'app-home',
@@ -14,139 +12,173 @@ import { AnalisisSuenio } from '../Interface/analisis-suenio.model';
   standalone: false,
 })
 export class HomePage implements OnInit {
-  devices: any[] = [];
-  pairedDevices: any[] = [];
-  unpairedDevices: any[] = [];
+  devices: ScanResult[] = [];
   receivedMessages: string[] = [];
-  dataReceived: string = '';
+  connectedDeviceId: string | null = null;
+  private bleBuffer: string = ''; // acumulador para manejar fragmentación
+
+private serviceUuid: string = '';
+private characteristicUuid: string = '';
+
 
   constructor(
-    private bluetoothSerial: BluetoothSerial,
     private platform: Platform,
     private toastController: ToastController,
     private loadingController: LoadingController,
-    // Se agrego esta nueva seccion
     private bluetoothDataService: BluetoothDataService,
     private router: Router
   ) {}
 
   async ngOnInit() {
     await this.platform.ready();
+    await this.initBLE();
+  }
+
+  async initBLE() {
     try {
-      await this.bluetoothSerial.enable();
-      this.showToast('Bluetooth activado correctamente', 'success');
-      this.listDevices();
+      await BleClient.initialize();
+      this.showToast('Bluetooth BLE inicializado', 'success');
     } catch (err) {
-      this.showToast('Activa Bluetooth para continuar', 'danger');
+      console.error('BLE init error:', err);
+      this.showToast('Error al iniciar BLE', 'danger');
     }
   }
 
   async scanAllDevices() {
-    const loading = await this.loadingController.create({
-      message: 'Buscando dispositivos...',
-      spinner: 'circles',
-    });
-    await loading.present();
+    this.devices = [];
 
     try {
-      this.pairedDevices = await this.bluetoothSerial.list();
+      await BleClient.requestLEScan({}, (result: ScanResult) => {
+        if (
+          result.device &&
+          result.device.name &&
+          !this.devices.find(d => d.device.deviceId === result.device.deviceId)
+        ) {
+          this.devices.push(result);
+        }
+      });
 
-      // Se modifico
-      const rawUnpaired = await this.bluetoothSerial.discoverUnpaired();
-      this.unpairedDevices = this.removeDuplicates(rawUnpaired);
+      this.showToast('Escaneando dispositivos BLE...', 'primary');
 
-      console.log('Emparejados:', this.pairedDevices);
-      console.log('No emparejados:', this.unpairedDevices);
-
-      this.showToast(`Encontrados ${this.pairedDevices.length} emparejados y ${this.unpairedDevices.length} nuevos`, 'primary');
+      setTimeout(async () => {
+        await BleClient.stopLEScan();
+        this.showToast(`Encontrados ${this.devices.length} dispositivos`, 'success');
+      }, 5000);
     } catch (error) {
-      console.error('Error al escanear dispositivos:', error);
-      this.showToast('Error al buscar dispositivos', 'danger');
-    } finally {
+      console.error('Error al escanear:', error);
+      this.showToast('Error al buscar dispositivos BLE', 'danger');
+    }
+  }
+
+  
+async connect(deviceId: string) {
+  const loading = await this.loadingController.create({
+    message: `Conectando a ${deviceId}...`,
+    spinner: 'lines',
+  });
+  await loading.present();
+
+  try {
+    await BleClient.connect(deviceId, async (disconnectedDeviceId) => {
+      console.log(`Dispositivo desconectado: ${disconnectedDeviceId}`);
+      this.connectedDeviceId = null;
+    });
+
+    this.connectedDeviceId = deviceId;
+    this.showToast('Conectado con éxito', 'success');
+
+    // ✅ Descubre servicios y características
+    const services = await BleClient.getServices(deviceId); // services: BleService[]
+
+    const primaryService = services.find(s => s.characteristics?.some(c => c.properties?.notify));
+    console.log('Servicios descubiertos:', services);
+
+    if (!primaryService) {
+      this.showToast('No se encontró un servicio con características notificables', 'danger');
       loading.dismiss();
+      return;
     }
-  }
 
-  async listDevices() {
+    const characteristic = primaryService.characteristics.find(c => c.properties?.notify);
+    if (!characteristic) {
+      this.showToast('No se encontró una característica notificable', 'danger');
+      loading.dismiss();
+      return;
+    }
+
+    // ✅ Asigna dinámicamente los UUIDs
+    this.serviceUuid = primaryService.uuid;
+    this.characteristicUuid = characteristic.uuid;
+
+    console.log('UUIDs usados:', this.serviceUuid, this.characteristicUuid);
+
+    loading.dismiss();
+
+    // ✅ Inicia la suscripción
+    await this.subscribeToNotifications(deviceId, this.serviceUuid, this.characteristicUuid);
+
+  } catch (error) {
+    console.error('Error al conectar:', error);
+    this.showToast('Error al conectar o descubrir servicios', 'danger');
+    loading.dismiss();
+  }
+}
+
+
+
+  async subscribeToNotifications(deviceId: string, serviceUuid: string, characteristicUuid: string) {
+  try {
+    await BleClient.startNotifications(deviceId, serviceUuid, characteristicUuid, (result) => {
+      const value = new TextDecoder().decode(result);
+      console.log('Notificación recibida:', value);
+
+      try {
+        const datosAnalizados: AnalisisSuenio = JSON.parse(value);
+        this.bluetoothDataService.setDatos(datosAnalizados);
+
+        // Navegar solo si aún no hemos navegado
+        if (!this.connectedDeviceId) {
+          this.connectedDeviceId = deviceId;
+          this.router.navigate(['/lector']);
+        }
+      } catch (error) {
+        console.error('Error al analizar datos BLE:', error);
+      }
+    });
+
+    this.showToast('Suscrito a notificaciones BLE', 'primary');
+  } catch (error) {
+    console.error('Error al suscribirse:', error);
+    this.showToast('Error al recibir datos', 'danger');
+  }
+}
+
+
+  processJsonBuffer(text: string) {
     try {
-      this.devices = await this.bluetoothSerial.list();
-      console.log('Dispositivos emparejados:', this.devices);
+      const parsed: AnalisisSuenio = JSON.parse(text);
+      console.log('JSON válido recibido:', parsed);
+      this.bluetoothDataService.setDatos(parsed);
     } catch (error) {
-      this.showToast('Error al listar dispositivos emparejados', 'danger');
+      console.warn('No se pudo parsear JSON:', text);
+      this.showToast('Datos recibidos en formato incorrecto', 'warning');
     }
   }
 
-  async connect(address: string) {
-    const loading = await this.loadingController.create({
-      message: `Conectando a ${address}...`,
-      spinner: 'lines',
-    });
-    await loading.present();
-
-    this.bluetoothSerial.connect(address).subscribe(
-      () => {
-        loading.dismiss();
-        this.showToast('Conectado con éxito', 'success');
-        this.readData();
-      },
-      error => {
-        loading.dismiss();
-        console.error('Error al conectar:', error);
-        this.showToast('Error al conectar al dispositivo', 'danger');
-      }
-    );
+  goToLector() {
+    this.router.navigate(['/lector']);
   }
 
-  // Modo numero 1 para leer datos
-  /*
-  readData() {
-    this.bluetoothSerial.subscribe('\n').subscribe(data => {
-      const trimmed = data.trim();
-      this.receivedMessages.push(trimmed);
-      console.log('Dato recibido:', trimmed);
-    });
-  }
-  */
-
-  // Modo numero 2 para leer datos
-  readData() {
-    this.bluetoothSerial.subscribe('\n').subscribe(data => {
-      try{
-        const parsed: AnalisisSuenio = JSON.parse(data.trim());
-        console.log('Dato recibido:', parsed);
-        this.bluetoothDataService.setLectura(parsed);
-      }catch (error){
-        console.error('Los datos recibidos no son en formato JSON:', data);
-        this.showToast('Formato de dato inválido');
-      }
-    });
-  }
-
-  async showToast(message: string, color: 'success' | 'danger' | 'primary' | 'warning' = 'primary') {
+  async showToast(
+    message: string,
+    color: 'success' | 'danger' | 'primary' | 'warning' = 'primary'
+  ) {
     const toast = await this.toastController.create({
       message,
       duration: 2500,
       position: 'bottom',
-      color
+      color,
     });
     toast.present();
-  }
-
-  removeDuplicates(devices: any[]): any[] {
-    const seen = new Set();
-    return devices.filter(device => {
-      if (seen.has(device.address)) {
-        return false;
-      }
-      seen.add(device.address);
-      return true;
-    });
-  }
-
-  // Se agrego este nuevo metodo
-  goToLector() {
-    // Modo numero 1 para lector de datos, tiens que activarlo
-    // this.bluetoothDataService.setMessages(this.receivedMessages);
-    this.router.navigate(['/lector']);
   }
 }

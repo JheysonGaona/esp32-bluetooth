@@ -1,64 +1,37 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>Bluetooth Clásico</ion-title>
+    <ion-title>Bluetooth LE</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content class="ion-padding">
 
-  <!-- Otro modo de navegar es usar [routerLink]="['/lector'] -->
-  <ion-button (click)="goToLector()">
-    Ir a Lector
-  </ion-button>
-
   <ion-button expand="block" color="primary" (click)="scanAllDevices()">
-    🔍 Buscar Dispositivos Cercanos
+    🔍 Buscar Dispositivos BLE
   </ion-button>
 
-  <ion-list *ngIf="pairedDevices.length > 0">
+  <ion-text *ngIf="devices.length === 0">
+    <p class="ion-text-center">No hay dispositivos encontrados aún</p>
+  </ion-text>
+
+  <ion-list *ngIf="devices.length > 0">
     <ion-list-header>
-      <ion-label>🔒 Dispositivos Emparejados</ion-label>
+      <ion-label>Dispositivos Detectados</ion-label>
     </ion-list-header>
 
-    <ion-item *ngFor="let device of pairedDevices">
+    <ion-item *ngFor="let device of devices">
       <ion-label>
-        <h2>{{ device.name || 'Sin nombre' }}</h2>
-        <p>{{ device.address }}</p>
+        <h2>{{ device.device.name || 'Sin nombre' }}</h2>
+        <p>{{ device.device.deviceId }}</p>
       </ion-label>
-      <ion-button slot="end" color="success" (click)="connect(device.address)">
+      <ion-button slot="end" color="success" (click)="connect(device.device.deviceId)">
         Conectar
       </ion-button>
     </ion-item>
   </ion-list>
 
-  <ion-list *ngIf="unpairedDevices.length > 0">
-    <ion-list-header>
-      <ion-label>🆕 Nuevos Dispositivos Detectados</ion-label>
-    </ion-list-header>
+  <ion-button expand="block" color="medium" (click)="goToLector()" *ngIf="connectedDeviceId">
+    Ir al lector de datos
+  </ion-button>
 
-    <ion-item *ngFor="let device of unpairedDevices">
-      <ion-label>
-        <h2>{{ device.name || 'Sin nombre' }}</h2>
-        <p>{{ device.address }}</p>
-      </ion-label>
-      <ion-button slot="end" color="success" (click)="connect(device.address)">
-        Conectar
-      </ion-button>
-    </ion-item>
-  </ion-list>
-
-  <ion-card *ngIf="receivedMessages.length > 0">
-  <ion-card-header>
-    <ion-card-title>📥 Datos Recibidos</ion-card-title>
-  </ion-card-header>
-  <ion-card-content>
-    <ion-list>
-      <ion-item *ngFor="let msg of receivedMessages; let i = index">
-        <ion-label>
-          <strong>#{{ i + 1 }}</strong> {{ msg }}
-        </ion-label>
-      </ion-item>
-    </ion-list>
-  </ion-card-content>
-</ion-card>
 </ion-content>
